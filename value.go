@@ -1,25 +1,43 @@
 package efmt
 
-import "errors"
-
 // ValuePairs extracts all key-value pairs from an error and its wrapped errors.
-// It traverses the error chain and collects structured data from each error.
+// The error tree is traversed depth-first, the same way errors.Is does it:
+// an error comes before the errors it wraps, and errors combined with
+// errors.Join or several %w verbs are visited in order.
 func ValuePairs(err error) []KeyValue {
 	var res []KeyValue
 
-	for err := err; err != nil; {
+	walk(err, func(err error) {
 		if e, ok := err.(*e); ok {
 			res = append(res, e.Values()...)
 		}
-
-		err = errors.Unwrap(err)
-	}
+	})
 
 	return res
 }
 
+func walk(err error, visit func(error)) {
+	for err != nil {
+		visit(err)
+
+		switch u := err.(type) {
+		case interface{ Unwrap() error }:
+			err = u.Unwrap()
+		case interface{ Unwrap() []error }:
+			for _, inner := range u.Unwrap() {
+				walk(inner, visit)
+			}
+
+			return
+		default:
+			return
+		}
+	}
+}
+
 // Values extracts all key-value pairs from an error chain and converts them to a map.
-// When multiple errors contain the same key, the value from the outermost error is used.
+// When multiple errors contain the same key, the value that ValuePairs returns first
+// is used, i.e. the one from the outermost error.
 func Values(err error) map[string]any {
 	pairs := ValuePairs(err)
 	res := make(map[string]any, len(pairs))

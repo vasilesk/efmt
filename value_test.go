@@ -2,6 +2,8 @@ package efmt_test
 
 import (
 	"errors"
+	"fmt"
+	"maps"
 	"slices"
 	"testing"
 
@@ -310,5 +312,46 @@ func TestValueRespectsShadowing(t *testing.T) {
 	// the inner int value is shadowed by the outer string one
 	if got, ok := efmt.Value[int](err, "id"); ok {
 		t.Errorf("Value[int]() = %d, true, want ok = false", got)
+	}
+}
+
+func TestValuesInErrorTree(t *testing.T) {
+	first := efmt.New("first", efmt.KV("first", 1), efmt.KV("common", "first"))
+	second := efmt.New("second", efmt.KV("second", 2), efmt.KV("common", "second"))
+
+	tests := []struct {
+		name string
+		err  error
+		want map[string]any
+	}{
+		{
+			name: "errors.Join",
+			err:  efmt.Wrap(errors.Join(first, second), "top", efmt.KV("top", 0)),
+			want: map[string]any{"top": 0, "first": 1, "second": 2, "common": "first"},
+		},
+		{
+			name: "multiple %w",
+			err:  fmt.Errorf("%w; %w", second, first),
+			want: map[string]any{"first": 1, "second": 2, "common": "second"},
+		},
+		{
+			name: "fmt.Errorf in the middle of a chain",
+			err:  efmt.Wrap(fmt.Errorf("plain: %w", first), "top", efmt.KV("top", 0)),
+			want: map[string]any{"top": 0, "first": 1, "common": "first"},
+		},
+		{
+			name: "nested join",
+			err:  errors.Join(errors.New("plain"), errors.Join(nil, second)),
+			want: map[string]any{"second": 2, "common": "second"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := efmt.Values(tt.err)
+			if !maps.Equal(got, tt.want) {
+				t.Errorf("Values() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
