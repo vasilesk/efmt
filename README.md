@@ -2,13 +2,11 @@
 
 [![tag](https://img.shields.io/github/tag/vasilesk/efmt.svg)](https://github.com/vasilesk/efmt/releases)
 ![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.23-%23007d9c)
-<!-- [![GoDoc](https://godoc.org/github.com/samber/lo?status.svg)](https://pkg.go.dev/github.com/samber/lo) -->
+[![Go Reference](https://pkg.go.dev/badge/github.com/vasilesk/efmt.svg)](https://pkg.go.dev/github.com/vasilesk/efmt)
 ![Build Status](https://github.com/vasilesk/efmt/actions/workflows/test.yml/badge.svg)
 [![Go report](https://goreportcard.com/badge/github.com/vasilesk/efmt)](https://goreportcard.com/report/github.com/vasilesk/efmt)
 [![Coverage](https://img.shields.io/codecov/c/github/vasilesk/efmt)](https://codecov.io/gh/vasilesk/efmt)
-<!-- [![Contributors](https://img.shields.io/github/contributors/samber/lo)](https://github.com/samber/lo/graphs/contributors) -->
-<!-- [![License](https://img.shields.io/github/license/samber/lo)](./LICENSE) -->
-
+[![License](https://img.shields.io/github/license/vasilesk/efmt)](./LICENSE)
 
 `efmt` is a Go library for enhanced error handling that allows you to attach structured metadata (key-value pairs) to errors. This helps to enrich error context while maintaining compatibility with Go's standard error interface.
 
@@ -23,7 +21,10 @@ go get github.com/vasilesk/efmt@latest
 - Create errors with structured metadata
 - Wrap existing errors with additional context
 - Extract metadata from errors as key-value pairs
+- Collect metadata from the whole error tree, including `fmt.Errorf("%w")` and `errors.Join`
+- Pass metadata to `log/slog`
 - Fully compatible with Go's standard error interface and unwrap mechanism
+- No dependencies outside the standard library
 
 ## Usage Examples
 
@@ -119,23 +120,58 @@ func handleProcessingError(err error) {
 }
 ```
 
-## Advanced Usage
+### Logging with slog
 
-You can combine `efmt` with other error handling packages as it maintains compatibility with Go's error unwrapping mechanism:
+`efmt.Attrs` returns the metadata as `slog` attributes in a stable order:
 
 ```go
 import (
-    "errors"
+    "context"
+    "log/slog"
 
     "github.com/vasilesk/efmt"
 )
 
-// Check for specific error types while preserving metadata
-if errors.Is(err, ErrNotFound) {
-    // Handle not found case, but still access metadata
-    values := efmt.Values(err)
-    // ...
+func logError(ctx context.Context, logger *slog.Logger, err error) {
+    attrs := append(efmt.Attrs(err), slog.Any("error", err))
+    logger.LogAttrs(ctx, slog.LevelError, "request failed", attrs...)
 }
+```
+
+## Key precedence
+
+When the same key is set at several levels of an error tree, the outermost value wins:
+
+```go
+inner := efmt.New("parse failed", efmt.KV("stage", "parse"), efmt.KV("line", 7))
+outer := efmt.Wrap(inner, "load failed", efmt.KV("stage", "load"))
+
+efmt.Values(outer) // map[line:7 stage:load]
+```
+
+`ValuePairs` returns all pairs, duplicates included, in traversal order: an error comes
+before the errors it wraps, and errors combined with `errors.Join` are visited in order.
+`Values`, `Value` and `Attrs` all use the first occurrence of a key in that order.
+`Value[T]` returns `false` if that occurrence is not of type `T`; it does not fall back
+to a shadowed inner value.
+
+## Compatibility with the errors package
+
+`efmt` errors work with `errors.Is`, `errors.As` and `errors.Unwrap`, and metadata is
+collected through errors wrapped by other means:
+
+```go
+import (
+    "errors"
+    "fmt"
+
+    "github.com/vasilesk/efmt"
+)
+
+err := fmt.Errorf("handler: %w", efmt.Wrap(ErrNotFound, "lookup failed", efmt.KV("id", 42)))
+
+errors.Is(err, ErrNotFound) // true
+efmt.Values(err)            // map[id:42]
 ```
 
 ## License
