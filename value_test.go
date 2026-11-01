@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"slices"
 	"testing"
 
 	"github.com/vasilesk/efmt"
@@ -163,142 +162,34 @@ func TestValues(t *testing.T) {
 }
 
 func TestValue(t *testing.T) {
-	// Create an error with various value types
 	err := efmt.New("test error",
 		efmt.KV("string", "string value"),
 		efmt.KV("int", 42),
 		efmt.KV("bool", true),
 		efmt.KV("float", 3.14),
 	)
-
-	// Create a chain to test value overrides
 	wrappedErr := efmt.Wrap(err, "wrapped", efmt.KV("string", "overridden"))
 
-	tests := []struct {
-		name      string
-		err       error
-		key       string
-		wantValue any
-		wantOk    bool
-	}{
-		{
-			name:      "get string value",
-			err:       err,
-			key:       "string",
-			wantValue: "string value",
-			wantOk:    true,
-		},
-		{
-			name:      "get int value",
-			err:       err,
-			key:       "int",
-			wantValue: 42,
-			wantOk:    true,
-		},
-		{
-			name:      "get bool value",
-			err:       err,
-			key:       "bool",
-			wantValue: true,
-			wantOk:    true,
-		},
-		{
-			name:      "get float value",
-			err:       err,
-			key:       "float",
-			wantValue: 3.14,
-			wantOk:    true,
-		},
-		{
-			name:      "overridden value in chain",
-			err:       wrappedErr,
-			key:       "string",
-			wantValue: "overridden",
-			wantOk:    true,
-		},
-		{
-			name:      "non-existent key",
-			err:       err,
-			key:       "nonexistent",
-			wantValue: "",
-			wantOk:    false,
-		},
-		{
-			name:      "nil error",
-			err:       nil,
-			key:       "any",
-			wantValue: "",
-			wantOk:    false,
-		},
-		{
-			name:      "type mismatch",
-			err:       err,
-			key:       "int",
-			wantValue: "",
-			wantOk:    false, // Should fail when getting int as string
-		},
-	}
+	t.Run("string", func(t *testing.T) { checkValue(t, err, "string", "string value", true) })
+	t.Run("int", func(t *testing.T) { checkValue(t, err, "int", 42, true) })
+	t.Run("bool", func(t *testing.T) { checkValue(t, err, "bool", true, true) })
+	t.Run("float", func(t *testing.T) { checkValue(t, err, "float", 3.14, true) })
+	t.Run("overridden value in chain", func(t *testing.T) {
+		checkValue(t, wrappedErr, "string", "overridden", true)
+	})
+	t.Run("inner value through wrapper", func(t *testing.T) { checkValue(t, wrappedErr, "int", 42, true) })
+	t.Run("non-existent key", func(t *testing.T) { checkValue(t, err, "nonexistent", "", false) })
+	t.Run("nil error", func(t *testing.T) { checkValue(t, nil, "any", "", false) })
+	t.Run("standard error", func(t *testing.T) { checkValue(t, errors.New("standard"), "any", "", false) })
+	t.Run("type mismatch", func(t *testing.T) { checkValue(t, err, "int", "", false) })
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Test with string type
-			if slices.Contains([]string{"string", "nonexistent", "any"}, tt.key) {
-				gotValue, gotOk := efmt.Value[string](tt.err, tt.key)
+func checkValue[T comparable](t *testing.T, err error, key string, want T, wantOk bool) {
+	t.Helper()
 
-				if tt.wantOk {
-					if !gotOk {
-						t.Errorf("Value() ok = false, want true")
-					}
-
-					if gotValue != tt.wantValue {
-						t.Errorf("Value() = %v, want %v", gotValue, tt.wantValue)
-					}
-				} else if gotOk {
-					t.Errorf("Value() ok = true, want false")
-				}
-			} else if tt.key == "int" {
-				if tt.name == "type mismatch" {
-					// Test type mismatch
-					_, gotOk := efmt.Value[string](tt.err, tt.key)
-					if gotOk {
-						t.Errorf("Value() with type mismatch returned ok = true, want false")
-					}
-				} else {
-					// Test with int type
-					gotValue, gotOk := efmt.Value[int](tt.err, tt.key)
-
-					if !gotOk {
-						t.Errorf("Value() ok = false, want true")
-					}
-
-					if gotValue != tt.wantValue {
-						t.Errorf("Value() = %v, want %v", gotValue, tt.wantValue)
-					}
-				}
-			} else if tt.key == "bool" {
-				// Test with bool type
-				gotValue, gotOk := efmt.Value[bool](tt.err, tt.key)
-
-				if !gotOk {
-					t.Errorf("Value() ok = false, want true")
-				}
-
-				if gotValue != tt.wantValue {
-					t.Errorf("Value() = %v, want %v", gotValue, tt.wantValue)
-				}
-			} else if tt.key == "float" {
-				// Test with float64 type
-				gotValue, gotOk := efmt.Value[float64](tt.err, tt.key)
-
-				if !gotOk {
-					t.Errorf("Value() ok = false, want true")
-				}
-
-				if gotValue != tt.wantValue {
-					t.Errorf("Value() = %v, want %v", gotValue, tt.wantValue)
-				}
-			}
-		})
+	got, ok := efmt.Value[T](err, key)
+	if ok != wantOk || got != want {
+		t.Errorf("Value[%T](%q) = %v, %v, want %v, %v", want, key, got, ok, want, wantOk)
 	}
 }
 

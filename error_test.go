@@ -176,3 +176,27 @@ func TestKeyValuesAreCopied(t *testing.T) {
 		}
 	}
 }
+
+type codeError struct{ code int }
+
+func (c *codeError) Error() string { return "code error" }
+
+func TestWrapIsAndAs(t *testing.T) {
+	sentinel := errors.New("sentinel")
+	coded := &codeError{code: 404}
+
+	err := efmt.Wrap(efmt.Wrap(errors.Join(sentinel, coded), "inner"), "outer", efmt.KV("key", "value"))
+
+	if !errors.Is(err, sentinel) {
+		t.Errorf("errors.Is() = false, want true")
+	}
+
+	var target *codeError
+	if !errors.As(err, &target) || target.code != 404 {
+		t.Errorf("errors.As() did not find *codeError")
+	}
+
+	if !errors.Is(efmt.Wrap(sentinel, "wrapped"), sentinel) {
+		t.Errorf("errors.Is() through a single Wrap = false, want true")
+	}
+}
