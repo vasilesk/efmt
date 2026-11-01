@@ -8,14 +8,12 @@ lint-fix:
 	golangci-lint run --fix -c .golangci.yml ./...
 
 test:
-	go test -race -v ./...
+	go test -race -coverprofile=cover.out -covermode=atomic ./...
 
-coverage:
-	go test -v -coverprofile=cover.out -covermode=atomic ./...
+coverage: test
 	go tool cover -html=cover.out -o cover.html
 
 build:
 	go build -v ./...
-
 
 .PHONY: tidy lint lint-fix test coverage build
