@@ -3,8 +3,8 @@
 [![tag](https://img.shields.io/github/tag/vasilesk/efmt.svg)](https://github.com/vasilesk/efmt/releases)
 ![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.23-%23007d9c)
 [![Go Reference](https://pkg.go.dev/badge/github.com/vasilesk/efmt.svg)](https://pkg.go.dev/github.com/vasilesk/efmt)
-![Build Status](https://github.com/vasilesk/efmt/actions/workflows/test.yml/badge.svg)
-[![Go report](https://goreportcard.com/badge/github.com/vasilesk/efmt)](https://goreportcard.com/report/github.com/vasilesk/efmt)
+[![Tests](https://github.com/vasilesk/efmt/actions/workflows/test.yml/badge.svg)](https://github.com/vasilesk/efmt/actions/workflows/test.yml)
+[![Lint](https://github.com/vasilesk/efmt/actions/workflows/lint.yml/badge.svg)](https://github.com/vasilesk/efmt/actions/workflows/lint.yml)
 [![Coverage](https://img.shields.io/codecov/c/github/vasilesk/efmt)](https://codecov.io/gh/vasilesk/efmt)
 [![License](https://img.shields.io/github/license/vasilesk/efmt)](./LICENSE)
 
