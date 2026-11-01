@@ -3,8 +3,6 @@ package efmt
 import (
 	"errors"
 	"fmt"
-
-	"github.com/samber/lo"
 )
 
 // New creates a new formatted error with the given text and optional key-value pairs.
@@ -24,7 +22,7 @@ func Wrap(err error, text string, kv ...KeyValue) error {
 		return nil
 	}
 
-	return lo.ToPtr(e{
+	return (&e{
 		wrapped: err,
 		err:     fmt.Errorf("%s: %w", text, err),
 		values:  make([]KeyValue, 0, 1),
@@ -61,4 +59,8 @@ func (e *e) Add(keyValues []KeyValue) *e {
 	return e
 }
 
-type KeyValue = lo.Entry[string, any]
+// KeyValue is a single piece of structured data attached to an error.
+type KeyValue struct {
+	Key   string
+	Value any
+}

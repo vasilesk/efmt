@@ -2,9 +2,8 @@ package efmt_test
 
 import (
 	"errors"
+	"slices"
 	"testing"
-
-	"github.com/samber/lo"
 
 	"github.com/vasilesk/efmt"
 )
@@ -241,7 +240,7 @@ func TestValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test with string type
-			if lo.Contains([]string{"string", "nonexistent", "any"}, tt.key) {
+			if slices.Contains([]string{"string", "nonexistent", "any"}, tt.key) {
 				gotValue, gotOk := efmt.Value[string](tt.err, tt.key)
 
 				if tt.wantOk {
