@@ -6,16 +6,17 @@ linters:
   disable:
     - depguard
     - err113
+    - exhaustruct # deprecated, replaced by exhaustruct_v5
     - godot
+    - gomodguard # deprecated, replaced by gomodguard_v2
     - ireturn
     - mnd
     - testpackage
     - varnamelen
+    - wsl # deprecated, replaced by wsl_v5
   settings:
     cyclop:
       max-complexity: 15
-    dupl:
-      threshold: 160
     errorlint:
       asserts: false
     funlen:
@@ -27,66 +28,19 @@ linters:
       keywords:
         - BUG
         - FIXME
-    gosec:
-      excludes:
-        - G402
-    interfacebloat:
-      max: 15
     nestif:
       min-complexity: 10
-    tagliatelle:
-      case:
-        rules:
-          avro: snake
-          bson: camel
-          json: snake
-          mapstructure: kebab
-          xml: camel
-          yaml: camel
-        use-field-name: false
-    wrapcheck:
-      ignore-sigs:
-        - .Errorf(
-        - errors.New(
-        - errors.Unwrap(
-        - .Wrap(
-        - .Wrapf(
-        - .WithMessage(
-        - .WithMessagef(
-        - .WithStack(
   exclusions:
     generated: lax
     rules:
-      - linters:
-          - revive
-        text: 'exported: comment on exported'
-      - linters:
-          - revive
-        text: 'package-comments: package comment should be of the form'
-      - linters:
-          - staticcheck
-        text: 'ST1021: comment on exported type'
-      - linters:
-          - revive
-          - staticcheck
-        text: should have a package comment
-      - linters:
-          - revive
-          - staticcheck
-        text: should have comment or be unexported
-      - linters:
-          - revive
-          - staticcheck
-        text: or a comment on this block
-      - linters:
-          - gosec
-        path: postgres/repo.go
-    paths:
-      - (\/|^)gen(\/|$)
-      - third_party$
-      - builtin$
-      - examples$
-      - (.+)_test.go
+      - path: _test\.go
+        linters:
+          - dupl
+          - exhaustruct_v5
+          - funlen
+          - goconst
+          - maintidx
+          - paralleltest
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
@@ -105,9 +59,3 @@ formatters:
       custom-order: false
   exclusions:
     generated: lax
-    paths:
-      - (\/|^)gen(\/|$)
-      - third_party$
-      - builtin$
-      - examples$
-      - (.+)_test.go

@@ -20,6 +20,7 @@ func Attrs(err error) []slog.Attr {
 		}
 
 		seen[kv.Key] = struct{}{}
+
 		res = append(res, slog.Any(kv.Key, kv.Value))
 	}
 

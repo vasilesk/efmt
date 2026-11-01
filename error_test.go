@@ -109,7 +109,7 @@ func TestWrap(t *testing.T) {
 
 			// Check unwrapping
 			unwrapped := errors.Unwrap(err)
-			if unwrapped != tt.err {
+			if unwrapped != tt.err { //nolint:errorlint // the direct cause itself is expected here
 				t.Errorf("Unwrap() = %v, want %v", unwrapped, tt.err)
 			}
 
