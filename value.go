@@ -35,14 +35,15 @@ func Values(err error) map[string]any {
 }
 
 // Value retrieves a typed value for a specific key from the error chain.
-// It returns the value and a boolean indicating whether the key was found
-// and if the value could be converted to the requested type.
+// As with Values, the outermost occurrence of the key is used.
+// It returns false if the key is not found or if that value is not of type T;
+// in the latter case inner values with the same key are not consulted.
 func Value[T any](err error, key string) (T, bool) {
 	for _, kv := range ValuePairs(err) {
 		if kv.Key == key {
-			if val, ok := kv.Value.(T); ok {
-				return val, true
-			}
+			val, ok := kv.Value.(T)
+
+			return val, ok
 		}
 	}
 

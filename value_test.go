@@ -299,3 +299,16 @@ func TestValue(t *testing.T) {
 		})
 	}
 }
+
+func TestValueRespectsShadowing(t *testing.T) {
+	err := efmt.Wrap(efmt.New("inner", efmt.KV("id", 42)), "outer", efmt.KV("id", "abc"))
+
+	if got, ok := efmt.Value[string](err, "id"); !ok || got != "abc" {
+		t.Errorf("Value[string]() = %q, %v, want %q, true", got, ok, "abc")
+	}
+
+	// the inner int value is shadowed by the outer string one
+	if got, ok := efmt.Value[int](err, "id"); ok {
+		t.Errorf("Value[int]() = %d, true, want ok = false", got)
+	}
+}
