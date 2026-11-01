@@ -1,11 +1,13 @@
 package efmt
 
+import "slices"
+
 // New creates a new formatted error with the given text and optional key-value pairs.
 func New(text string, kv ...KeyValue) error {
 	return &e{
 		msg:    text,
 		cause:  nil,
-		values: kv,
+		values: slices.Clone(kv),
 	}
 }
 
@@ -20,7 +22,7 @@ func Wrap(err error, text string, kv ...KeyValue) error {
 	return &e{
 		msg:    text,
 		cause:  err,
-		values: kv,
+		values: slices.Clone(kv),
 	}
 }
 

@@ -161,3 +161,18 @@ func TestKV(t *testing.T) {
 		})
 	}
 }
+
+func TestKeyValuesAreCopied(t *testing.T) {
+	kvs := []efmt.KeyValue{efmt.KV("key", "original")}
+
+	newErr := efmt.New("new", kvs...)
+	wrapErr := efmt.Wrap(errors.New("base"), "wrap", kvs...)
+
+	kvs[0].Value = "mutated"
+
+	for name, err := range map[string]error{"New": newErr, "Wrap": wrapErr} {
+		if got, _ := efmt.Value[string](err, "key"); got != "original" {
+			t.Errorf("%s() value changed after caller mutated its slice: got %q", name, got)
+		}
+	}
+}
